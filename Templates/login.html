@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Login — SecureAuth{% endblock %}
+
+{% block content %}
+<div class="auth-center">
+  <div class="card">
+    <div class="card-header">
+      <h1>Bem-vindo de volta</h1>
+      <p>Acesse sua conta com segurança</p>
+    </div>
+
+    <form method="POST" action="/login" id="loginForm">
+      <div class="form-group">
+        <label>Usuário ou E-mail</label>
+        <input type="text" name="username" autocomplete="username" required placeholder="seu@email.com">
+      </div>
+      <div class="form-group">
+        <label>Senha</label>
+        <input type="password" name="password" autocomplete="current-password" required placeholder="••••••••">
+      </div>
+
+      <button type="submit" class="btn btn-primary" id="submitBtn">
+        <span>Entrar</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </button>
+    </form>
+
+    <div class="divider">ou</div>
+    <p style="text-align:center; font-size:.88rem; color:var(--muted)">
+      Não tem conta? <a href="/register" class="link">Cadastre-se</a>
+    </p>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('loginForm').addEventListener('submit', function() {
+  const btn = document.getElementById('submitBtn');
+  btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin 1s linear infinite"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> Verificando...';
+  btn.disabled = true;
+});
+</script>
+<style>@keyframes spin { to { transform: rotate(360deg); } }</style>
+{% endblock %}

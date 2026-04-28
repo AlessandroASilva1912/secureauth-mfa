@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% block title %}Verificação MFA — SecureAuth{% endblock %}
+
+{% block content %}
+<div class="auth-center">
+  <div class="card" style="max-width:380px">
+    <div class="card-header" style="text-align:center">
+      <div style="font-size:2.5rem;margin-bottom:.75rem">🔑</div>
+      <h1>Verificação MFA</h1>
+      <p>Olá <strong style="color:var(--accent)">{{ username }}</strong>! Insira o código do seu autenticador.</p>
+    </div>
+
+    <!-- Timer ring -->
+    <div class="otp-timer">
+      <div class="ring-wrap">
+        <svg width="48" height="48" viewBox="0 0 40 40">
+          <circle class="ring-bg" cx="20" cy="20" r="18"/>
+          <circle class="ring-fg" id="ringFg" cx="20" cy="20" r="18"/>
+        </svg>
+        <div class="ring-txt" id="timerNum">30</div>
+      </div>
+      <span class="timer-label">segundos restantes</span>
+    </div>
+
+    <form method="POST" action="/mfa/verify" id="mfaForm">
+      <input type="hidden" name="use_backup" id="useBackup" value="0">
+      <div class="form-group">
+        <label id="codeLabel">Código de 6 dígitos</label>
+        <input type="text" name="token" id="tokenInput" class="otp-input"
+               maxlength="6" inputmode="numeric" pattern="\d{6}"
+               autocomplete="one-time-code" autofocus required
+               placeholder="000000">
+      </div>
+      <button type="submit" class="btn btn-primary">
+        Verificar
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+      </button>
+    </form>
+
+    <div class="divider">código de recuperação?</div>
+    <button onclick="toggleBackup()" class="btn btn-outline" style="width:100%;font-size:.8rem">
+      Usar código de backup
+    </button>
+
+    <p style="text-align:center;margin-top:1.2rem;font-size:.82rem">
+      <a href="/login" class="link">← Voltar ao login</a>
+    </p>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let backupMode = false;
+const tokenInput = document.getElementById('tokenInput');
+const codeLabel  = document.getElementById('codeLabel');
+const useBackup  = document.getElementById('useBackup');
+
+function toggleBackup() {
+  backupMode = !backupMode;
+  if (backupMode) {
+    tokenInput.pattern    = '[A-Fa-f0-9]{8}';
+    tokenInput.maxLength  = 8;
+    tokenInput.inputMode  = 'text';
+    tokenInput.placeholder = 'XXXXXXXX';
+    tokenInput.classList.remove('otp-input');
+    tokenInput.style.letterSpacing = '.2em';
+    tokenInput.style.fontSize      = '1.1rem';
+    codeLabel.textContent = 'Código de backup (8 chars)';
+    useBackup.value = '1';
+  } else {
+    tokenInput.pattern    = '\\d{6}';
+    tokenInput.maxLength  = 6;
+    tokenInput.inputMode  = 'numeric';
+    tokenInput.placeholder = '000000';
+    tokenInput.classList.add('otp-input');
+    tokenInput.style.letterSpacing = '.5em';
+    tokenInput.style.fontSize      = '1.6rem';
+    codeLabel.textContent = 'Código de 6 dígitos';
+    useBackup.value = '0';
+  }
+  tokenInput.value = '';
+  tokenInput.focus();
+}
+
+// auto-submit when 6 digits typed
+tokenInput.addEventListener('input', () => {
+  if (!backupMode && tokenInput.value.length === 6) {
+    document.getElementById('mfaForm').submit();
+  }
+});
+
+// ── Ring timer ──
+const circumference = 2 * Math.PI * 18; // ≈ 113.1
+const ringFg = document.getElementById('ringFg');
+const timerNum = document.getElementById('timerNum');
+
+function updateTimer() {
+  fetch('/api/totp-remaining')
+    .then(r => r.json())
+    .then(d => {
+      const rem = d.remaining;
+      timerNum.textContent = rem;
+      const offset = circumference * (1 - rem / 30);
+      ringFg.style.strokeDashoffset = offset;
+      if (rem <= 5) ringFg.style.stroke = 'var(--danger)';
+      else if (rem <= 10) ringFg.style.stroke = 'var(--warning)';
+      else ringFg.style.stroke = 'var(--accent)';
+    }).catch(() => {});
+}
+updateTimer();
+setInterval(updateTimer, 1000);
+</script>
+{% endblock %}

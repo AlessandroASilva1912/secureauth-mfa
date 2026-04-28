@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — SecureAuth{% endblock %}
+
+{% block content %}
+<div class="dashboard-wrap">
+  <h1 class="page-title">Dashboard</h1>
+
+  <div class="grid-2">
+    <!-- Profile card -->
+    <div class="stat-card" style="grid-column: span 2">
+      <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+        <div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:1.4rem;font-weight:800;color:#fff;flex-shrink:0">
+          {{ user['username'][0].upper() }}
+        </div>
+        <div>
+          <div style="font-size:1.1rem;font-weight:800">{{ user['username'] }}</div>
+          <div style="color:var(--muted);font-size:.85rem;font-family:'JetBrains Mono',monospace">{{ user['email'] }}</div>
+        </div>
+        <div style="margin-left:auto;display:flex;gap:.75rem;align-items:center;flex-wrap:wrap">
+          {% if user['mfa_enabled'] %}
+            <span class="mfa-badge mfa-on">🛡 MFA Ativo</span>
+          {% else %}
+            <span class="mfa-badge mfa-off">⚠ MFA Inativo</span>
+          {% endif %}
+          <a href="/mfa/setup" class="btn btn-outline" style="font-size:.78rem;padding:.5rem 1rem">
+            Configurar MFA
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid-2" style="margin-bottom:1.5rem">
+    <div class="stat-card">
+      <div class="stat-label">Segurança da Conta</div>
+      <div class="stat-value {% if user['mfa_enabled'] %}green{% else %}danger{% endif %}">
+        {% if user['mfa_enabled'] %}Alta{% else %}Baixa{% endif %}
+      </div>
+      <p style="font-size:.8rem;color:var(--muted);margin-top:.3rem">
+        {% if user['mfa_enabled'] %}Proteção com 2 fatores ativa.{% else %}Ative o MFA para mais segurança.{% endif %}
+      </p>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-label">Último Login</div>
+      <div class="stat-value cyan" style="font-size:1rem;margin-top:.4rem;font-family:'JetBrains Mono',monospace">
+        {{ user['last_login'] or 'Primeiro acesso' }}
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-label">Membro desde</div>
+      <div class="stat-value purple" style="font-size:1rem;margin-top:.4rem;font-family:'JetBrains Mono',monospace">
+        {{ user['created_at'][:10] }}
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent attempts -->
+  <div class="stat-card" style="animation-delay:.3s">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+      <h3 style="font-size:.9rem;font-weight:800;letter-spacing:.04em">Tentativas de Login Recentes</h3>
+      <span style="font-size:.72rem;color:var(--muted)">Últimas 5</span>
+    </div>
+    {% if attempts %}
+    <table>
+      <thead>
+        <tr>
+          <th>Status</th>
+          <th>IP</th>
+          <th>Data / Hora</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in attempts %}
+        <tr>
+          <td>
+            {% if a['success'] %}
+              <span class="dot dot-ok"></span><span style="color:var(--success)">Sucesso</span>
+            {% else %}
+              <span class="dot dot-fail"></span><span style="color:var(--danger)">Falha</span>
+            {% endif %}
+          </td>
+          <td>{{ a['ip_address'] }}</td>
+          <td>{{ a['timestamp'] }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+      <p style="color:var(--muted);font-size:.85rem;text-align:center;padding:1rem 0">Nenhuma tentativa registrada ainda.</p>
+    {% endif %}
+  </div>
+
+  {% if not user['mfa_enabled'] %}
+  <div style="background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.25);border-radius:12px;padding:1.25rem 1.5rem;margin-top:1.5rem;display:flex;align-items:center;gap:1rem;flex-wrap:wrap">
+    <span style="font-size:1.4rem">⚠️</span>
+    <div style="flex:1">
+      <div style="font-weight:700;color:#fbbf24;margin-bottom:.2rem">MFA não ativado</div>
+      <div style="font-size:.85rem;color:var(--muted)">Recomendamos ativar a autenticação de dois fatores para proteger sua conta.</div>
+    </div>
+    <a href="/mfa/setup" class="btn btn-outline" style="border-color:rgba(245,158,11,.4);color:#fbbf24;font-size:.8rem">
+      Ativar agora
+    </a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

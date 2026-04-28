@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+{% block title %}Configurar MFA — SecureAuth{% endblock %}
+
+{% block content %}
+<div class="auth-center" style="padding-top:1rem">
+<div class="card card-wide">
+  <div class="card-header">
+    <h1>Autenticação de Dois Fatores</h1>
+    <p>
+      Status atual:
+      {% if user['mfa_enabled'] %}
+        <span class="mfa-badge mfa-on">🛡 Ativo</span>
+      {% else %}
+        <span class="mfa-badge mfa-off">⚠ Inativo</span>
+      {% endif %}
+    </p>
+  </div>
+
+  {% if user['mfa_enabled'] %}
+    <!-- ── MFA already active ── -->
+    <div style="background:rgba(0,200,150,.06);border:1px solid rgba(0,200,150,.2);border-radius:12px;padding:1.5rem;margin-bottom:1.5rem">
+      <h3 style="color:var(--success);margin-bottom:.5rem">✓ MFA está ativo</h3>
+      <p style="color:var(--muted);font-size:.88rem">Sua conta está protegida com autenticação de dois fatores via TOTP.</p>
+    </div>
+
+    <form method="POST" action="/mfa/setup" id="disableForm">
+      <input type="hidden" name="action" value="disable">
+      <button type="button" onclick="confirmDisable()" class="btn btn-danger">
+        Desativar MFA
+      </button>
+    </form>
+
+  {% else %}
+    <!-- ── Setup wizard ── -->
+    <div id="step1" class="setup-step">
+      <p style="color:var(--muted);font-size:.9rem;margin-bottom:1.5rem">
+        Configure um app autenticador (Google Authenticator, Authy, etc.) para adicionar uma camada extra de segurança.
+      </p>
+      <button onclick="generateQR()" class="btn btn-primary" id="genBtn">
+        Gerar QR Code
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      </button>
+    </div>
+
+    <div id="step2" style="display:none">
+      <div style="display:flex;gap:2rem;flex-wrap:wrap;align-items:flex-start">
+
+        <div style="flex:0 0 auto;text-align:center">
+          <div style="border:2px solid var(--border2);border-radius:12px;padding:1rem;display:inline-block;background:#fff">
+            <img id="qrImg" src="" alt="QR Code" style="width:180px;height:180px;display:block">
+          </div>
+          <p style="font-size:.72rem;color:var(--muted);margin-top:.5rem">Escaneie com seu autenticador</p>
+        </div>
+
+        <div style="flex:1;min-width:220px">
+          <p style="font-size:.82rem;color:var(--muted);margin-bottom:.75rem">
+            Ou insira a chave manual:
+          </p>
+          <div style="background:rgba(0,229,255,.05);border:1px solid var(--border2);border-radius:8px;padding:.75rem 1rem;font-family:'JetBrains Mono',monospace;font-size:.85rem;color:var(--accent);word-break:break-all;letter-spacing:.08em" id="secretDisplay">—</div>
+
+          <div style="margin-top:1.5rem">
+            <label>Digite o código gerado pelo app</label>
+            <input type="text" id="totpInput" class="otp-input" maxlength="6"
+                   inputmode="numeric" placeholder="000000" style="margin-top:.4rem">
+          </div>
+
+          <div id="confirmMsg" style="min-height:1.2rem;font-size:.82rem;margin:.5rem 0"></div>
+
+          <button onclick="confirmCode()" class="btn btn-primary" id="confirmBtn">
+            Confirmar e Ativar
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div id="step3" style="display:none">
+      <div style="background:rgba(0,229,255,.06);border:1px solid rgba(0,229,255,.2);border-radius:12px;padding:1.5rem;margin-bottom:1.5rem">
+        <h3 style="color:var(--accent);margin-bottom:.5rem">🎉 MFA Ativado com Sucesso!</h3>
+        <p style="color:var(--muted);font-size:.88rem;margin-bottom:1rem">
+          Guarde estes códigos de backup em local seguro. Cada um pode ser usado uma única vez para recuperar acesso caso perca seu autenticador.
+        </p>
+        <div class="backup-grid" id="backupGrid"></div>
+        <button onclick="copyBackups()" class="btn btn-outline" style="margin-top:.75rem;font-size:.78rem">
+          📋 Copiar todos
+        </button>
+      </div>
+      <a href="/dashboard" class="btn btn-primary">Ir para o Dashboard</a>
+    </div>
+  {% endif %}
+
+  <div style="margin-top:1.5rem">
+    <a href="/dashboard" class="link" style="font-size:.85rem">← Voltar ao Dashboard</a>
+  </div>
+</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function generateQR() {
+  const btn = document.getElementById('genBtn');
+  btn.textContent = 'Gerando...'; btn.disabled = true;
+  const res  = await fetch('/mfa/setup', {
+    method: 'POST',
+    headers: {'Content-Type':'application/x-www-form-urlencoded'},
+    body: 'action=generate'
+  });
+  const data = await res.json();
+  if (data.qr.startsWith('__otpauth__')) {
+    const uri = data.qr.replace('__otpauth__', '');
+    document.getElementById('qrImg').alt = 'QR não disponível';
+    document.getElementById('qrImg').style.display = 'none';
+    const p = document.createElement('p');
+    p.style.cssText = 'font-size:.72rem;color:var(--muted);word-break:break-all;max-width:180px';
+    p.textContent = 'QR indisponível. Copie o URI abaixo:';
+    document.getElementById('qrImg').parentNode.appendChild(p);
+    const pre = document.createElement('code');
+    pre.style.cssText = 'font-size:.6rem;word-break:break-all;color:var(--accent)';
+    pre.textContent = uri;
+    document.getElementById('qrImg').parentNode.appendChild(pre);
+  } else {
+    document.getElementById('qrImg').src = data.qr;
+  }
+  document.getElementById('secretDisplay').textContent = data.secret;
+  document.getElementById('step1').style.display = 'none';
+  document.getElementById('step2').style.display = 'block';
+  document.getElementById('totpInput').focus();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const inp = document.getElementById('totpInput');
+  if (inp) inp.addEventListener('input', () => {
+    if (inp.value.length === 6) confirmCode();
+  });
+});
+
+async function confirmCode() {
+  const token = document.getElementById('totpInput')?.value;
+  const btn   = document.getElementById('confirmBtn');
+  const msg   = document.getElementById('confirmMsg');
+  if (!token || token.length !== 6) { msg.style.color='var(--danger)'; msg.textContent='Digite 6 dígitos.'; return; }
+  btn.textContent = 'Verificando...'; btn.disabled = true;
+  const res  = await fetch('/mfa/setup', {
+    method: 'POST',
+    headers: {'Content-Type':'application/x-www-form-urlencoded'},
+    body: `action=confirm&token=${token}`
+  });
+  const data = await res.json();
+  if (data.ok) {
+    // show backup codes
+    const grid = document.getElementById('backupGrid');
+    grid.innerHTML = data.backup_codes.map(c =>
+      `<div class="backup-code">${c}</div>`
+    ).join('');
+    document.getElementById('step2').style.display = 'none';
+    document.getElementById('step3').style.display = 'block';
+  } else {
+    msg.style.color = 'var(--danger)'; msg.textContent = data.msg;
+    btn.textContent = 'Confirmar e Ativar'; btn.disabled = false;
+    document.getElementById('totpInput').value = '';
+    document.getElementById('totpInput').focus();
+  }
+}
+
+function copyBackups() {
+  const codes = [...document.querySelectorAll('.backup-code')].map(el => el.textContent).join('\n');
+  navigator.clipboard.writeText(codes).then(() => alert('Códigos copiados!'));
+}
+
+function confirmDisable() {
+  if (confirm('Tem certeza que deseja desativar o MFA? Sua conta ficará menos segura.')) {
+    document.getElementById('disableForm').submit();
+  }
+}
+</script>
+{% endblock %}

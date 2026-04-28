@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Cadastro — SecureAuth{% endblock %}
+
+{% block content %}
+<div class="auth-center">
+  <div class="card">
+    <div class="card-header">
+      <h1>Criar conta</h1>
+      <p>Configure sua conta protegida com MFA</p>
+    </div>
+
+    <form method="POST" action="/register" id="regForm">
+      <div class="form-group">
+        <label>Nome de usuário</label>
+        <input type="text" name="username" required placeholder="johndoe" minlength="3">
+      </div>
+      <div class="form-group">
+        <label>E-mail</label>
+        <input type="email" name="email" required placeholder="john@example.com">
+      </div>
+      <div class="form-group">
+        <label>Senha</label>
+        <input type="password" name="password" id="pwd" required placeholder="Mínimo 8 caracteres" minlength="8">
+        <div id="pwdStrength" style="height:4px;border-radius:2px;margin-top:6px;background:var(--border);overflow:hidden">
+          <div id="pwdBar" style="height:100%;width:0;transition:width .3s,background .3s;border-radius:2px"></div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Confirmar senha</label>
+        <input type="password" name="confirm_password" id="confirm" required placeholder="Repita a senha">
+        <div id="matchMsg" style="font-size:.75rem;margin-top:.3rem;color:var(--muted)"></div>
+      </div>
+
+      <button type="submit" class="btn btn-primary">
+        Criar conta
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </button>
+    </form>
+
+    <div class="divider">ou</div>
+    <p style="text-align:center; font-size:.88rem; color:var(--muted)">
+      Já tem conta? <a href="/login" class="link">Entrar</a>
+    </p>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const pwd = document.getElementById('pwd');
+const bar = document.getElementById('pwdBar');
+const confirm = document.getElementById('confirm');
+const matchMsg = document.getElementById('matchMsg');
+
+pwd.addEventListener('input', () => {
+  const v = pwd.value;
+  let score = 0;
+  if (v.length >= 8) score++;
+  if (/[A-Z]/.test(v)) score++;
+  if (/[0-9]/.test(v)) score++;
+  if (/[^A-Za-z0-9]/.test(v)) score++;
+  const colors = ['','#ff4d6d','#f59e0b','#00c896','#00e5ff'];
+  const widths = ['0%','25%','50%','75%','100%'];
+  bar.style.width = widths[score];
+  bar.style.background = colors[score];
+});
+
+confirm.addEventListener('input', () => {
+  if (!confirm.value) { matchMsg.textContent = ''; return; }
+  if (confirm.value === pwd.value) {
+    matchMsg.style.color = 'var(--success)';
+    matchMsg.textContent = '✓ Senhas coincidem';
+  } else {
+    matchMsg.style.color = 'var(--danger)';
+    matchMsg.textContent = '✗ Senhas não coincidem';
+  }
+});
+</script>
+{% endblock %}
