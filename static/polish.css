@@ -1,0 +1,23 @@
+
+body,button,input,select,textarea {font-family: system-ui, sans-serif}
+button,a,input,select,textarea {outline-offset:4px}
+:focus-visible {outline:2px solid var(--accent)}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
+:root{--bg:#111420;--surface:#191e2e;--border:#333c54;--border2:#495674;--accent:#a7bfff;--accent2:#a99af9;--success:#72e0ae;--danger:#ff90a5;--warning:#ffcc86;--text:#f0f3fa;--muted:#a8b4cd;--glow:0 22px 60px #090d1880}
+body::before{background:repeating-linear-gradient(90deg,#8799ce0a 0 1px,transparent 1px 72px)}
+body::after{background:radial-gradient(ellipse at center,#6d86e82c,transparent 70%)}
+nav{background:#141a28ee;padding:16px clamp(15px,5vw,70px);gap:12px}
+nav .nav-links{flex-wrap:wrap;justify-content:flex-end;gap:10px}
+.logo{color:#eaf0ff;letter-spacing:-.02em;text-transform:none}
+.logo-icon{display:grid;place-items:center;width:32px;height:32px;border:1px solid #586b9a;border-radius:9px;font:700 11px monospace;color:#bed0ff;background:#263351}
+.card{border-radius:22px;box-shadow:var(--glow);padding:clamp(21px,6vw,39px)}
+.card-header::before{content:"IDENTIDADE E ACESSO";display:block;margin-bottom:12px;color:#a7bfff;font:700 10px monospace;letter-spacing:.15em}
+.card-header h1{background:none;-webkit-text-fill-color:var(--text);font-size:clamp(25px,5vw,34px);letter-spacing:-.045em}
+.card-header p{line-height:1.65}
+.btn-primary{background:#b1c5ff;color:#121b33;box-shadow:none}
+.stat-card{border-radius:15px}
+.dashboard-wrap{max-width:1060px}
+.page-title{letter-spacing:-.035em}
+.otp-input{max-width:100%;min-width:0}
+@media(max-width:580px){.grid-2{grid-template-columns:minmax(0,1fr)}.grid-2>.stat-card{grid-column:auto!important}.stat-card{overflow:auto}}

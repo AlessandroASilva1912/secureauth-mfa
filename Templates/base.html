@@ -279,11 +279,12 @@
     color: var(--accent); text-align: center; letter-spacing: .1em;
   }
 </style>
+<link rel="stylesheet" href="/static/polish.css">
 </head>
 <body>
 <div class="page-wrap">
 <nav>
-  <a href="/" class="logo"><span class="logo-icon">🔐</span> AASolutions</a>
+  <a href="/" class="logo"><span class="logo-icon" aria-hidden="true">SA</span> SecureAuth</a>
   <div class="nav-links">
     {% if session.get('fully_authenticated') %}
       <a href="/dashboard">Dashboard</a>
